@@ -20,7 +20,7 @@ def setup_project():
     _verify_sudo()
     _create_virtualenv()
     _install_gunicorn()
-    #_git_clone()
+    _git_clone()
     _install_requirements()
     _upload_db_init_script()
     _upload_nginx_conf()
