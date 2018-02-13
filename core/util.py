@@ -35,18 +35,13 @@ class EnvConfig(object):
     def pre_init(self):
         #  the Python path to a Django settings module.
         if env.stage == 'product':
-            env.django_project_settings = 'settings'
             env.db_init_shell = 'db_init.sh'
         elif env.stage == 'staging':
-            env.django_project_settings = 'settings_staging'
-            env.db_init_shell = 'db_stage_init.sh'
+            env.db_init_shell = 'db_init.sh'
         else:  # local
-            env.django_project_settings = 'settings_staging'
-            env.db_init_shell = 'db_stage_init.sh'
-
+            env.db_init_shell = 'db_init.sh'
         #  hosts to deploy your project, users must be sudoers
         env.hosts = ["%s@%s" % (env.login_user, ip) for ip in env.target_ips]
-        pass
 
 def load_config(path):
     if not env.get('load_config'):

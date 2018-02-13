@@ -37,7 +37,7 @@ def init_machine():
     _upload_pip_conf()
     _install_dependencies()
     _install_virtualenv()
-    _upload_db_init_script()
+
     end_time = datetime.now()
     finish_message = '[%s] Correctly finished in %i seconds' % \
     (green_bg(end_time.strftime('%H:%M:%S')), (end_time - start_time).seconds)
@@ -84,7 +84,7 @@ def test_configuration(verbose=True):
     elif verbose:
         parameters_info.append(('Django project root', env.django_project_root))
     if 'django_project_settings' not in env or not env.django_project_settings:
-        env.django_project_settings = 'settings'
+        env.django_project_settings = '%s.settings' % env.project
     if verbose:
         parameters_info.append(('django_project_settings', env.django_project_settings))
     if 'django_media_path' not in env or not env.django_media_path:
@@ -259,16 +259,26 @@ def _install_dependencies():
         "libffi-dev",
         "libcurl4-openssl-dev",
         "libssl-dev",
+        # 以下是新增的, 从setup.py的_install_requirements同移值过来的.
+        "libtiff5-dev",
+        "libjpeg8-dev",
+        "zlib1g-dev",
+        "libfreetype6-dev",
+        "liblcms2-dev",
+        "libwebp-dev",
     ]
-    sudo("apt-get -y install %s" % " ".join(packages))
+    for package in packages:
+        sudo("dpkg-query -l %s && echo '%s already install!!!' || apt-get -y install %s" % (package, package, package))
+        #sudo("apt-get -y install %s" % " ".join(packages))
     if "additional_packages" in env and env.additional_packages:
-        sudo("apt-get -y install %s" % " ".join(env.additional_packages))
+        for package in env.additional_packages:
+            sudo("dpkg-query -l %s && echo '[ %s ] already install!!!' || apt-get -y install %s" % (package, package, package))
     _install_nginx()
     sudo("pip install --upgrade pip")
 
 
 def _install_virtualenv():
-    sudo('pip install virtualenv;pip install virtualenvwrapper;pip install autoenv')
+    sudo('which virtualenv && echo "virtualenv already install" || ( pip install virtualenv;pip install virtualenvwrapper;pip install autoenv ) ')
 
 
 def _setup_directories():
@@ -304,14 +314,6 @@ def _upload_pip_conf():
                     context=context, backup=False, use_sudo=True)
     run('mkdir -p ~/.pip')
     run('ln -sf %s ~/.pip/%s' % (env.pip_conf_file, 'pip.conf'))
-
-def _upload_db_init_script():
-    context = copy(env)
-    template = '%s/scripts/%s' % (fabric_utils_path,  env.db_init_shell)
-    upload_template(template, '/tmp/db_init.sh',
-                    context=context, backup=False, use_sudo=True)
-    sudo('sh /tmp/db_init.sh')
-
 
 @task
 # Sysctl security

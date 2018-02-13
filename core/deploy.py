@@ -6,7 +6,7 @@ from fabric.api import env, puts, abort, cd, hide, task
 from fabric.operations import sudo, settings, run
 from fabric.contrib import console
 from core.init import test_configuration, _verify_sudo
-from core.setup import _install_requirements, virtenvrun
+from core.setup import _install_requirements, virtenvrun, upload_supervisor_conf
 from fabric.colors import _wrap_with
 green_bg = _wrap_with('42')
 red_bg = _wrap_with('41')
@@ -32,9 +32,10 @@ def deploy_project(isResetDB='False'):
     puts(green_bg('Start deploy...'))
     start_time = datetime.now()
 
-    #git_pull()
-    #_install_requirements()
-    #_prepare_django_project((isResetDB == 'True' or isResetDB == '1'))
+    git_pull()
+    _install_requirements()
+    _prepare_django_project((isResetDB == 'True' or isResetDB == '1'))
+    #upload_supervisor_conf() #测试用
     _supervisor_restart()
 
     end_time = datetime.now()

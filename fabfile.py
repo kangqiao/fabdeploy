@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-from os.path import abspath, dirname, join
 from fabric.api import env, task
-from core.util import EnvConfig, load_config, is_config_file, log, line_between
+from core.util import load_config, log, line_between
 from core.init import init_machine
 from core.setup import setup_project, setup_web_app
 from core.deploy import deploy_project, git_pull
+from core.useropt import create_super_user
+
+from fabric.operations import sudo, settings, run
 
 @task
 @line_between

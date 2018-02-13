@@ -20,8 +20,9 @@ def setup_project():
     _verify_sudo()
     _create_virtualenv()
     _install_gunicorn()
-    _git_clone()
+    #_git_clone()
     _install_requirements()
+    _upload_db_init_script()
     _upload_nginx_conf()
     _upload_webpage_nginx_conf()
     _update_logpremission_script()
@@ -36,29 +37,32 @@ def setup_project():
 
 @task
 def setup_web_app():
-    _verify_sudo()
-    sudo('mkdir -p /opt/websites/z_pub')
-    sudo('wget -qO- https://github.com/CoinLQ/Z_PUB/archive/master.zip | bsdtar -xvf- -C /opt/websites/z_pub')
-    sudo('rm -rf /opt/websites/z_pub/current')
-    sudo('mv /opt/websites/z_pub/Z_PUB-master /opt/websites/z_pub/current')
-    sudo('nginx -s reload')
+    if env.webapp_repository:
+        _verify_sudo()
+        sudo('mkdir -p %s' % env.webapp_code_root)
+        sudo('rm -rf ' + env.webapp_code_root)
+        sudo('git clone -b %s %s %s' % (env.webapp_branch, env.webapp_repository, env.webapp_code_root))
+        #sudo('wget -qO- https://github.com/CoinLQ/Z_PUB/archive/master.zip | bsdtar -xvf- -C /opt/websites/z_pub')
+        #sudo('rm -rf /opt/websites/z_pub/current')
+        #sudo('mv /opt/websites/z_pub/Z_PUB-master /opt/websites/z_pub/current')
+        sudo('nginx -s reload')
 
 def _install_requirements():
     ''' you must have a file called requirements.txt in your project root'''
     if 'requirements_file' in env and env.requirements_file:
         sudo('chown -R %s /opt/django' % env.login_user)
-        sudo('apt-get install -y libtiff5-dev libjpeg8-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev')
+        #sudo('apt-get install -y libtiff5-dev libjpeg8-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev')
         virtenvrun('pip install cffi')
         virtenvrun('pip install -r %s' % env.requirements_file)
 
 def _install_gunicorn():
     """ force gunicorn installation into your virtualenv, even if it's installed globally.
     for more details: https://github.com/benoitc/gunicorn/pull/280 """
-    virtenvsudo('pip install -I gunicorn')
+    virtenvsudo('( [ -x %s/bin/gunicorn ] && echo "already install gunicorn!!!" || pip install -I gunicorn )' % env.virtenv)
 
 
 def _create_virtualenv():
-    sudo('virtualenv --python=python3.6 --%s %s' % (' --'.join(env.virtenv_options), env.virtenv))
+    sudo('[ -d %s ] && echo "already create virtualenv" || virtualenv --python=python3.6 --%s %s' % (env.virtenv_bin_dir, ' --'.join(env.virtenv_options), env.virtenv))
     sudo('chown -R %s /opt/django' % env.login_user)
 
 
@@ -86,6 +90,13 @@ def _test_nginx_conf():
     if 'test failed' in res:
         abort(red_bg('NGINX configuration test failed! Please review your parameters.'))
 
+def _upload_db_init_script():
+    template = '%s/scripts/%s' % (fabric_utils_path, env.db_init_shell)
+    dest_name = '/tmp/db_init_%s.sh' % env.project
+    context = copy(env)
+    upload_template(template, dest_name,
+                    context=context, backup=False, use_sudo=True)
+    sudo('sh %s' % dest_name)
 
 def _upload_nginx_conf():
     ''' upload nginx conf '''
@@ -129,6 +140,7 @@ def _upload_webpage_nginx_conf():
 def _reload_supervisorctl():
     sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reread' % env)
     sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf update' % env)
+    #sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reload' % env)
 
 
 def _upload_supervisord_conf():
@@ -170,6 +182,11 @@ def _upload_celery_beat_conf():
                     context=env, backup=False, use_sudo=True)
     sudo('ln -sf %s /etc/supervisor/conf.d/%s' % (env.supervisord_beatconf_file, basename(env.supervisord_beatconf_file)))
     _reload_supervisorctl()
+
+def upload_supervisor_conf():
+    _upload_supervisord_conf()
+    _upload_celery_worker_conf()
+    _upload_celery_beat_conf()
 
 def _prepare_django_app_path():
     for path in [env.django_media_path, env.django_static_path]:
