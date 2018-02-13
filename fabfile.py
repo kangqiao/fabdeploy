@@ -4,7 +4,7 @@
 from fabric.api import env, task
 from core.util import load_config, log, line_between
 from core.init import init_machine
-from core.setup import setup_project, setup_web_app
+from core.setup import setup_project, setup_web_app, upload_supervisor_conf
 from core.deploy import deploy_project, git_pull
 from core.useropt import create_super_user
 

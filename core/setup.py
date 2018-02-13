@@ -138,9 +138,9 @@ def _upload_webpage_nginx_conf():
 
 
 def _reload_supervisorctl():
-    sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reread' % env)
-    sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf update' % env)
-    #sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reload' % env)
+    #sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reread' % env)
+    #sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf update' % env)
+    sudo('%(supervisorctl)s -c /etc/supervisor/supervisord.conf reload' % env)
 
 
 def _upload_supervisord_conf():
@@ -183,6 +183,7 @@ def _upload_celery_beat_conf():
     sudo('ln -sf %s /etc/supervisor/conf.d/%s' % (env.supervisord_beatconf_file, basename(env.supervisord_beatconf_file)))
     _reload_supervisorctl()
 
+@task
 def upload_supervisor_conf():
     _upload_supervisord_conf()
     _upload_celery_worker_conf()
